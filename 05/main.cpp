@@ -1,7 +1,19 @@
-#include <algorithm>
 #include <cassert>
 #include <cstring>
 #include <iostream>
+
+/*
+Группа людей называется современниками если был такой момент, когда они могли
+собраться вместе. Для этого в этот момент каждому из них должно было уже
+исполниться 18 лет, но ещё не исполниться 80 лет.
+
+Дан список Жизни Великих Людей. Необходимо получить максимальное количество
+современников. В день 18летия человек уже может принимать участие в собраниях,
+а в день 80летия и в день смерти уже не может.
+
+Замечание. Человек мог не дожить до 18-летия, либо умереть в день 18-летия. В
+этих случаях принимать участие в собраниях он не мог.
+*/
 
 constexpr int kDynamicArrayInitialSize = 1;
 
@@ -137,6 +149,7 @@ void DynamicArray<T>::Grow() {
   buffer_size_ = std::max(kDynamicArrayInitialSize, buffer_size_ << 1);
 }
 
+
 template <typename T,
           typename Comparator = std::less<T>>
 void Merge(
@@ -157,10 +170,10 @@ void Merge(
   std::cout << std::endl;
 #endif
 
-  int i = left;
-  int j = middle + 1;
+  auto i = left;
+  auto j = middle + 1;
 
-  for (int k = 0; k < temp_array_size; k++) {
+  for (auto k = 0; k < temp_array_size; k++) {
     if (j <= right
         && (i == middle + 1 || compare(dynamic_array[j], dynamic_array[i])))
       temp_array[k] = dynamic_array[j++];
@@ -189,7 +202,7 @@ void MergeSortRec(
   assert(left >= 0 && right >= 0);
 
   if (left < right) {
-    int middle = (left + right) / 2; 
+    auto middle = (left + right) / 2; 
     MergeSortRec(left, middle, dynamic_array, compare);
     MergeSortRec(middle + 1, right, dynamic_array, compare);
     Merge(left, middle, right, dynamic_array, compare);
@@ -201,6 +214,9 @@ template <typename T,
 void MergeSort(
     DynamicArray<T>& dynamic_array,
     Comparator compare = Comparator()) {
+  if (dynamic_array.Size() <= 1)
+    return;
+
   MergeSortRec(0, dynamic_array.Size() - 1, dynamic_array, compare);
 }
 
@@ -255,71 +271,68 @@ bool operator<(const Date& date_1, const Date& date_2) {
   return false;
 }
 
-bool CheckForLegalAge(const Date& birth, const Date& death) {
-  return death.year - birth.year >= 18
-    && death.month - birth.month >= 0
-    && death.day - birth.day > 0;
+bool CouldParticipateInTheMeeting(const Date& birth, const Date& death) {
+  return Date(birth.day, birth.month, birth.year + 18) < death;
 }
 
 
-struct Meeting {
+struct Bound {
  public:
   Date date;
   int delta;
 
-  Meeting();
-  explicit Meeting(Date date, int delta);
+  Bound();
+  explicit Bound(Date date, int delta);
 
-  friend std::ostream& operator<<(std::ostream& out, const Meeting& meeting);
+  friend std::ostream& operator<<(std::ostream& out, const Bound& meeting);
 
-  friend bool operator<(const Meeting& meeting_1, const Meeting& meeting_2);
+  friend bool operator<(const Bound& bound_1, const Bound& bound_2);
 };
 
-Meeting::Meeting()
+Bound::Bound()
   : date(Date()), delta(0) {} 
 
-Meeting::Meeting(Date date, int delta)
+Bound::Bound(Date date, int delta)
   : date(date), delta(delta) {} 
 
-std::ostream& operator<<(std::ostream& out, const Meeting& meeting) {
-  out << '[' << meeting.date << ' ' << meeting.delta << ']';
+std::ostream& operator<<(std::ostream& out, const Bound& bound) {
+  out << '[' << bound.date << ' ' << bound.delta << ']';
   return out;
 }
 
-bool operator<(const Meeting& meeting_1, const Meeting& meeting_2) {
-  return meeting_1.date < meeting_2.date;
+bool operator<(const Bound& bound, const Bound& bound_2) {
+  return bound.date < bound_2.date;
 }
+
 
 int main() {
   int n { 0 };
   std::cin >> n;
   assert(n >= 0);
 
-  DynamicArray<Meeting> meeting_bounds { };
+  DynamicArray<Bound> dynamic_array { };
   for (auto i = 0; i < n; i++) {
     Date birth { };
     Date death { };
     std::cin >> birth >> death;
 
-    if (bool could_participate_in_the_meeting = CheckForLegalAge(birth, death);
-        could_participate_in_the_meeting == true) {
+    if (CouldParticipateInTheMeeting(birth, death)) {
+      dynamic_array.PushBack(Bound(
+          Date(birth.day, birth.month, birth.year + 18),
+          1));
+
+      dynamic_array.PushBack(Bound(
+          std::min(death, Date(birth.day, birth.month, birth.year + 80)),
+          -1));
     }
-
-    meeting_bounds.PushBack(Meeting(
-        Date(birth.day, birth.month, birth.year + 18),
-        1));
-
-    meeting_bounds.PushBack(Meeting(
-        std::min(death, Date(birth.day, birth.month, birth.year + 80)),
-        -1));
   }
 
-  MergeSort<Meeting>(meeting_bounds);
+  MergeSort<Bound>(dynamic_array);
 
   int max_overlap { 0 };
   int current_overlap { 0 };
-  for (auto i = 0; i < meeting_bounds.Size(); i++) {
-    current_overlap += meeting_bounds[i].delta;
+  for (auto i = 0; i < dynamic_array.Size(); i++) {
+    current_overlap += dynamic_array[i].delta;
     max_overlap = std::max(max_overlap, current_overlap);
   }
 
