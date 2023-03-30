@@ -1,5 +1,6 @@
 .PHONY: clean generate build \
-        01 02 03 04 05 06
+        01 02 03 04 05 06 \
+				0a 0b 0c
 clean:
 	rm -rf build/ .cache/
 
@@ -29,3 +30,12 @@ build:
 
 06:
 	./build/06/06
+
+0a:
+	./build/0a/0a
+
+0b:
+	./build/0b/0b
+
+0c:
+	./build/0c/0c
