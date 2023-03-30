@@ -2,22 +2,47 @@
 #include <iostream>
 #include <cmath>
 
+/*
+Дано множество целых чисел из [0..10^9] размера n. Используя алгоритм поиска
+k-ой порядковой статистики, требуется найти следующие параметры множества:
+- 10% перцентиль
+- медиана
+- 90% перцентиль
+
+Требования:
+- Дополнительная память: O(n).
+- Среднее время работы: O(n)
+- Должна быть отдельно выделенная функция partition.
+- Рекурсия запрещена.
+- Решение должно поддерживать передачу функции сравнения снаружи.
+
+Формат ввода
+
+Сначала вводится кол-во элементов массива n. После сам массив.
+
+Формат вывода
+
+Параметры множества в порядке:
+- 10% перцентиль
+- медиана
+- 90% перцентиль
+*/
+
 template <typename T, typename Comparator = std::less<T>>
-int MedianOfThreePosition(
+void MedianOfThree(
     int left,
     int right,
     T* array,
     Comparator compare = Comparator()) {
   int middle = (left + right) / 2;
-  if (compare(array[left], array[middle])) {
-    if (compare(array[middle], array[right]))
-      return middle;
-    return compare(array[left], array[right]) ? right : left;
-  } else {
-    if (compare(array[left], array[right]))
-      return left;
-    return compare(array[middle], array[right]) ? right : middle;
-  }
+  if (compare(array[middle], array[left]))
+    std::swap(array[middle], array[left]);
+
+  if (compare(array[middle], array[right]))
+    std::swap(array[middle], array[right]);
+  
+  if (compare(array[middle], array[left]))
+    std::swap(array[middle], array[left]);
 }
 
 template <typename T, typename Comparator = std::less<T>>
@@ -26,15 +51,13 @@ int Partition(
     int right,
     T* array,
     Comparator compare = Comparator()) {
-  std::swap(
-      array[MedianOfThreePosition<T, Comparator>(left, right, array, compare)],
-      array[right]);
+  MedianOfThree<T, Comparator>(left, right, array, compare);
   
   auto pivot = array[right];
   auto i = right;
   for (auto j = right - 1; j >= left; j--) {
-    if (array[j] > pivot)
-      std::swap(array[--i], array[j]);
+    if (compare(pivot, array[j]))
+      std::swap(array[j], array[--i]);
   }
   std::swap(array[i], array[right]);
 
@@ -47,7 +70,7 @@ int KthStatistics(
     T* array,
     int n,
     Comparator compare = Comparator()) {
-  auto k = int(std::ceil(n * percentile));
+  auto k = int(std::floor(n * percentile));
   auto left = 0;
   auto right = n - 1;
   while (true) {
