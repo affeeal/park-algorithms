@@ -1,42 +1,48 @@
-#include <cassert>
 #include <cstddef>
 #include <iostream>
 #include <string>
 #include <string_view>
 #include <vector>
 
-constexpr std::size_t kHashtableInitialSize = 8;
-constexpr double kMaxFillFactor = 0.75;
+/*
+Реализуйте структуру данных типа “множество строк” на основе динамической
+хеш-таблицы с открытой адресацией. Хранимые строки непустые и состоят из
+строчных латинских букв. Хеш-функция строки должна быть реализована с помощью
+вычисления значения многочлена методом Горнера. Начальный размер таблицы должен
+быть равным 8-ми. Перехеширование выполняйте при добавлении элементов в случае,
+когда коэффициент заполнения таблицы достигает 3/4. Структура данных должна
+поддерживать операции добавления строки в множество, удаления строки из
+множества и проверки принадлежности данной строки множеству.
 
-constexpr std::size_t kOperationPos = 0;
-constexpr std::size_t kOperandPos = 2;
+Вариант 2. Для разрешения коллизий используйте двойное хеширование.
+*/
 
-constexpr std::string_view kOk("OK");
-constexpr std::string_view kFail("FAIL");
+const std::size_t kHashtableInitialSize = 8;
+const double kMaxFillFactor = 0.75;
 
-template <std::size_t Ratio>
+template <std::size_t Factor>
 class StringHasher {
  public:
   std::size_t operator()(const std::string& str) const;
 };
 
-template <std::size_t Ratio>
-std::size_t StringHasher<Ratio>::operator()(const std::string& str) const {
+template <std::size_t Factor>
+std::size_t StringHasher<Factor>::operator()(const std::string& str) const {
   std::size_t hash = 0;
   for (auto ch : str) {
-    hash = hash * Ratio + std::size_t(ch);
+    hash = hash * Factor + std::size_t(ch);
   }
   return hash;
 }
 
-template <typename T, typename FirstHasher, typename SecondHasher>
+template <typename FirstHasher, typename SecondHasher>
 class Hashtable {
  public:
   explicit Hashtable();
 
-  bool Has(const T& key) const;
-  bool Add(const T& key);
-  bool Delete(const T& key);
+  bool Has(const std::string& key) const;
+  bool Add(const std::string& key);
+  bool Delete(const std::string& key);
  private:
   void Grow();
   
@@ -48,7 +54,7 @@ class Hashtable {
 
   struct Cell {
     Status status;
-    T data;
+    std::string data;
 
     Cell() : status(Status::kNotInitialized) {}
   };
@@ -59,15 +65,14 @@ class Hashtable {
   SecondHasher second_hasher_;
 };
 
-template <typename T, typename FirstHasher, typename SecondHasher>
-Hashtable<T, FirstHasher, SecondHasher>::Hashtable()
-  : buffer_(kHashtableInitialSize),
-    size_(0),
-    first_hasher_(FirstHasher()),
-    second_hasher_(SecondHasher()) {}
+template <typename FirstHasher, typename SecondHasher>
+Hashtable<FirstHasher, SecondHasher>::Hashtable()
+  : buffer_(kHashtableInitialSize), size_(0),
+    first_hasher_(FirstHasher()), second_hasher_(SecondHasher()) {
+}
 
-template <typename T, typename FirstHasher, typename SecondHasher>
-bool Hashtable<T, FirstHasher, SecondHasher>::Has(const T& key) const {
+template <typename FirstHasher, typename SecondHasher>
+bool Hashtable<FirstHasher, SecondHasher>::Has(const std::string& key) const {
   std::size_t first_hash = first_hasher_(key);
   std::size_t second_hash = 1 + (second_hasher_(key) << 1);
 
@@ -86,9 +91,10 @@ bool Hashtable<T, FirstHasher, SecondHasher>::Has(const T& key) const {
   return false;
 }
 
-template <typename T, typename FirstHasher, typename SecondHasher>
-bool Hashtable<T, FirstHasher, SecondHasher>::Add(const T &key) {
-  if (double(size_) / double(buffer_.size()) >= kMaxFillFactor) {
+template <typename FirstHasher, typename SecondHasher>
+bool Hashtable<FirstHasher, SecondHasher>::Add(const std::string& key) {
+  if (static_cast<double>(size_) / static_cast<double>(buffer_.size())
+      >= kMaxFillFactor) {
     Grow();
   }
 
@@ -117,8 +123,6 @@ bool Hashtable<T, FirstHasher, SecondHasher>::Add(const T &key) {
       }
     }
   }
-
-  assert(is_first_deleted_set == true);
   
   buffer_[first_deleted].status = Status::kInitialized;
   buffer_[first_deleted].data = key;
@@ -127,15 +131,17 @@ bool Hashtable<T, FirstHasher, SecondHasher>::Add(const T &key) {
   return true;
 }
 
-template <typename T, typename FirstHasher, typename SecondHasher>
-bool Hashtable<T, FirstHasher, SecondHasher>::Delete(const T &key) {
+template <typename FirstHasher, typename SecondHasher>
+bool Hashtable<FirstHasher, SecondHasher>::Delete(const std::string& key) {
   std::size_t first_hash = first_hasher_(key);
   std::size_t second_hash = 1 + (second_hasher_(key) << 1);
 
   for (std::size_t i = 0; i < buffer_.size(); i++) {
     std::size_t hash = (first_hash + i * second_hash) % buffer_.size();
 
-    if (buffer_[hash].status == Status::kInitialized) {
+    if (buffer_[hash].status == Status::kNotInitialized) {
+      return false;
+    } else if (buffer_[hash].status == Status::kInitialized) {
       if (buffer_[hash].data == key) {
         buffer_[hash].status = Status::kDeleted;
         size_--;
@@ -147,8 +153,8 @@ bool Hashtable<T, FirstHasher, SecondHasher>::Delete(const T &key) {
   return false;
 }
 
-template <typename T, typename FirstHasher, typename SecondHasher>
-void Hashtable<T, FirstHasher, SecondHasher>::Grow() {
+template <typename FirstHasher, typename SecondHasher>
+void Hashtable<FirstHasher, SecondHasher>::Grow() {
   std::vector<Cell> new_buffer(buffer_.size() << 1);
 
   for (std::size_t i = 0; i < buffer_.size(); i++) {
@@ -171,6 +177,9 @@ void Hashtable<T, FirstHasher, SecondHasher>::Grow() {
   buffer_ = std::move(new_buffer);
 }
 
+const std::size_t kOperationPos = 0;
+const std::size_t kOperandPos = 2;
+
 enum Operation {
   kHas = '?',
   kAdd = '+',
@@ -178,24 +187,24 @@ enum Operation {
 };
 
 void Run(std::istream& in, std::ostream& out) {
-  Hashtable<std::string, StringHasher<71>, StringHasher<131>> hashtable;
+  Hashtable<StringHasher<71>, StringHasher<131>> hashtable;
   std::string line;
   while (std::getline(in, line)) {
     switch (line[kOperationPos]) {
      case Operation::kHas:
-      out << (hashtable.Has(line.substr(kOperandPos)) ? kOk : kFail)
+      out << (hashtable.Has(line.substr(kOperandPos)) ? "OK" : "FAIL")
           << std::endl;
       break;
      case Operation::kAdd:
-      out << (hashtable.Add(line.substr(kOperandPos)) ? kOk : kFail)
+      out << (hashtable.Add(line.substr(kOperandPos)) ? "OK" : "FAIL")
           << std::endl;
       break;
      case Operation::kDelete:
-      out << (hashtable.Delete(line.substr(kOperandPos)) ? kOk : kFail)
+      out << (hashtable.Delete(line.substr(kOperandPos)) ? "OK" : "FAIL")
           << std::endl;
       break;
      default:
-      out << "Undefined operation" << std::endl;
+      return;
     }
   }
 }
