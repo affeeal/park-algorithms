@@ -1,6 +1,8 @@
 .PHONY: clean generate build \
         01 02 03 04 05 06 \
-				0a 0b 0c
+				0a 0b 0c \
+				21
+
 clean:
 	rm -rf build/ .cache/
 
@@ -12,6 +14,7 @@ silent-build:
 
 build:
 	@make -s silent-build 
+
 
 01:
 	./build/01/01
@@ -39,3 +42,7 @@ build:
 
 0c:
 	./build/0c/0c
+
+
+21:
+	./build/21/21
