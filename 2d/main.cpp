@@ -63,7 +63,7 @@ class AvlTree {
             return std::make_pair(true, found->data);
           }
         }
-        return std::make_pair(false, 0);
+        break;
       }
     }
     if (last_upper) {
@@ -89,7 +89,7 @@ class AvlTree {
             return std::make_pair(true, found->data);
           }
         }
-        return std::make_pair(false, 0);
+        break;
       }
     }
     if (last_lower) {
@@ -211,21 +211,6 @@ class AvlTree {
     node->left = RemoveMin(node->left);
     return DoBalance(node);
     
-  }
-
-  Node* Find(int data) {
-    Node* tmp = root_;
-    while (tmp) {
-      if (tmp->data == data) {
-        return tmp;
-      }
-      if (tmp->data < data) {
-        tmp = tmp->right;
-      } else {
-        tmp = tmp->left;
-      }
-    }
-    return nullptr;
   }
   
   Node* FindMax(Node* node) {
