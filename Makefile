@@ -1,7 +1,8 @@
 .PHONY: clean generate build \
         01 02 03 04 05 06 \
 				0a 0b 0c \
-				21
+				21 22 \
+				2a 2b 2c 2d
 
 clean:
 	rm -rf build/ .cache/
@@ -46,3 +47,19 @@ build:
 
 21:
 	./build/21/21
+
+22:
+	./build/22/22
+
+
+2a:
+	./build/2a/2a
+
+2b:
+	./build/2b/2b
+
+2c:
+	./build/2c/2c
+
+2d:
+	./build/2d/2d
