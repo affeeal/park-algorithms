@@ -1,7 +1,7 @@
 .PHONY: clean generate build \
         01 02 03 04 05 06 \
 				0a 0b 0c \
-				21 22 24 \
+				21 22 23 24 \
 				2a 2b 2c 2d
 
 clean:
@@ -50,6 +50,9 @@ build:
 
 22:
 	./build/22/22
+
+23:
+	./build/23/23
 
 24:
 	./build/24/24
