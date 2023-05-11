@@ -19,6 +19,7 @@ add_subdirectory(0c)
 
 add_subdirectory(21)
 add_subdirectory(22)
+add_subdirectory(24)
 
 add_subdirectory(2a)
 add_subdirectory(2b)
