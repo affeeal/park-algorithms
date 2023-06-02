@@ -1,0 +1,5 @@
+add_subdirectory(i_graph)
+add_subdirectory(list_graph)
+add_subdirectory(matrix_graph)
+add_subdirectory(set_graph)
+add_subdirectory(arc_graph)
