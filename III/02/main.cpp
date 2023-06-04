@@ -21,12 +21,6 @@ n пар реберных вершин,
 Количество кратчайших путей от v к w.
 */
 
-enum class Color {
-  kWhite,
-  kGray,
-  kBlack,
-};
-
 class IGraph {
  public:
   virtual ~IGraph() = default;
@@ -99,53 +93,41 @@ std::vector<int> ListGraph::GetPrevVertices(int vertex) const {
   return prev_vertices;
 }
 
-void FindShortestPaths(
+void Bfs(
     const IGraph& graph,
     int vertex,
     std::vector<int>& lengths,
+    std::vector<int>& parents,
     std::vector<int>& count) {
   lengths[vertex] = 0;
   count[vertex] = 1;
   
-  std::vector<Color> colors(graph.VerticesCount(), Color::kWhite);
-  
   std::queue<int> q;
   q.push(vertex);
-
   while (!q.empty()) {
     int from = q.front();
     q.pop();
-
-    colors[from] = Color::kGray;
+    
     for (int to : graph.GetNextVertices(from)) {
-      if (colors[to] == Color::kBlack) {
-        continue;
-      }
-
       if (lengths[to] > lengths[from] + 1) {
         lengths[to] = lengths[from] + 1;
+        parents[to] = from;
         count[to] = count[from];
+        q.push(to);
       } else if (lengths[to] == lengths[from] + 1) {
         count[to] += count[from];
       }
-
-      if (colors[to] == Color::kWhite) {
-        colors[to] = Color::kGray;
-        q.push(to);
-      }
     }
-
-    colors[from] = Color::kBlack;
   }
 }
 
 int main() {
-  int n = 0; // число вершин
+  int n = 0;
   std::cin >> n;
 
   ListGraph list_graph(n);
 
-  int m = 0; // число рёбер
+  int m = 0;
   std::cin >> m;
   
   for (int i = 0; i < m; i++) {
@@ -159,11 +141,12 @@ int main() {
   std::cin >> from >> to;
 
   std::vector<int> lengths(n, INT_MAX);
+  std::vector<int> parents(n, -1);
   std::vector<int> count(n, 0);
-  FindShortestPaths(
-      list_graph,
+  Bfs(list_graph,
       from,
       lengths,
+      parents,
       count);
 
   std::cout << count[to] << std::endl;
